@@ -119,12 +119,7 @@ function love.draw()
         circle_end.x + circle_start.width/2, circle_end.y + circle_start.height/2)
     love.graphics.line(bullet_start.x + bullet_start.width/2, bullet_start.y + bullet_start.height/2, 
         bullet_end.x + bullet_end.width/2, bullet_end.y + bullet_end.height/2)
-
-    love.graphics.setColor(0, 255, 255, 127)
-    love.graphics.circle("line", circle_x, circle_y, circle_r)
-    love.graphics.circle("fill", circle_x, circle_y, 2)
-    love.graphics.circle("fill", bullet_x, bullet_y, 5)
-    
+ 
     love.graphics.setColor(255, 0, 0, 127)
 
     if col_circle_x1 then
@@ -138,6 +133,11 @@ function love.draw()
         love.graphics.circle("fill", col_circle_x2, col_circle_y2, 2)
         love.graphics.circle("fill", col_bullet_x2, col_bullet_y2, 5)
     end
+
+    love.graphics.setColor(0, 127, 127, 255)
+    love.graphics.circle("line", circle_x, circle_y, circle_r)
+    love.graphics.circle("fill", circle_x, circle_y, 2)
+    love.graphics.circle("fill", bullet_x, bullet_y, 5)
 
     love.graphics.setColor(0, 127, 0, 255)
     for i,rect in ipairs(draggables) do
