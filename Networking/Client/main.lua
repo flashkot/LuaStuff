@@ -11,8 +11,19 @@ local updaterate = 0.1 -- how long to wait, in seconds, before requesting an upd
 local world = {} -- the empty world-state
 local t
 
+local latency, latency_display = 0, 0
+local render_delay = 0.1
+
+local frames = {}
+local curent_frame = 1
+local step_back_frames = 2--render_delay / updaterate
+
+local frames_rendered = 0
+
 -- love.load, hopefully you are familiar with it from the callbacks tutorial
 function love.load()
+
+    love.graphics.setBackgroundColor(150, 75, 175)
 
     -- first up, we need a udp socket, from which we'll do all
     -- out networking.
@@ -58,12 +69,19 @@ function love.load()
     
     -- t is just a variable we use to help us with the update rate in love.update.
     t = 0 -- (re)set t to 0
+
+    for i = 1, 30, 1 do
+         table.insert(frames, {})
+    end
+
 end
 
 -- love.update, hopefully you are familiar with it from the callbacks tutorial
 function love.update(deltatime)
 
     t = t + deltatime -- increase t by the deltatime
+
+    latency = latency + deltatime
     
     -- its *very easy* to completely saturate a network connection if you
     -- aren't careful with the packets we send (or request!), we hedge
@@ -77,11 +95,10 @@ function love.update(deltatime)
         -- the last update-worth here into a single packet, drastically reducing
         -- our bandwidth use.
         local x, y = 0, 0
-        if love.keyboard.isDown('up') then  y=y-(20*t) end
-        if love.keyboard.isDown('down') then    y=y+(20*t) end
-        if love.keyboard.isDown('left') then    x=x-(20*t) end
-        if love.keyboard.isDown('right') then   x=x+(20*t) end
-
+        if love.keyboard.isDown('w') then y=y-(200*t) end
+        if love.keyboard.isDown('s') then y=y+(200*t) end
+        if love.keyboard.isDown('a') then x=x-(200*t) end
+        if love.keyboard.isDown('d') then x=x+(200*t) end
 
         -- again, we prepare a packet *payload* using string.format, 
         -- then send it on its way with udp:send
@@ -102,8 +119,16 @@ function love.update(deltatime)
         -- its appropriate]
         local dg = string.format("%s %s $", entity, 'update')
         udp:send(dg)
+        latency = 0
 
         t=t-updaterate -- set t for the next round
+
+        curent_frame = curent_frame + 1
+        frames_rendered = 0
+
+        if curent_frame == 31 then
+            curent_frame = 1
+        end
     end
 
     
@@ -134,6 +159,11 @@ function love.update(deltatime)
                 x, y = tonumber(x), tonumber(y)
                 -- and finally we stash it away
                 world[ent] = {x=x, y=y}
+
+                latency_display = latency
+
+                frames[curent_frame][ent] = {x=x, y=y}
+
             else
                 -- this case shouldn't trigger often, but its always a good idea
                 -- to check (and log!) any unexpected messages and events.
@@ -153,16 +183,45 @@ function love.update(deltatime)
             error("Network error: "..tostring(msg))
         end
     until not data 
-
 end
 
 -- love.draw, hopefully you are familiar with it from the callbacks tutorial
 function love.draw()
     -- pretty simple, we just loop over the world table, and print the
     -- name (key) of everything in their, at its own stored co-ords.
-    for k, v in pairs(world) do
-        love.graphics.print(k, v.x, v.y)
+    love.graphics.setColor(255, 0, 0)
+    -- for k, v in pairs(world) do
+    --     love.graphics.rectangle("line", v.x, v.y, 20, 20)
+    -- end
+
+    love.graphics.setColor(255, 255, 255)
+
+    local render_frame = curent_frame - step_back_frames
+    if render_frame < 1 then
+        render_frame = render_frame + 30
     end
+
+    local next_frame = render_frame + 1
+    if next_frame > 30 then
+        next_frame = next_frame - 30
+    end
+
+    if frames[render_frame] and frames[next_frame] then
+        for k, v in pairs(world) do
+            if frames[render_frame][k] and frames[next_frame][k] then
+                local x = frames[render_frame][k]["x"] + (frames[next_frame][k]["x"] - frames[render_frame][k]["x"]) * t / updaterate
+                local y = frames[render_frame][k]["y"] + (frames[next_frame][k]["y"] - frames[render_frame][k]["y"]) * t / updaterate
+                love.graphics.rectangle("fill", x, y, 20, 20)
+            end        
+        end
+    end
+
+    frames_rendered = frames_rendered + 1
+
+    love.graphics.print("Current latency: "..tostring(latency_display * 1000) .. "ms", 10, 10)
+    love.graphics.print("FPS: "..tostring(love.timer.getFPS( )), 10, 25)
+    love.graphics.print("Interpolated frames: "..tostring(frames_rendered), 10, 40)
+   
 end
 
 -- And thats the end of the udp client example.
