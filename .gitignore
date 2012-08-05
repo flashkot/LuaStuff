@@ -1,0 +1,7 @@
+# Packages #
+############
+*.love
+
+# OS generated files #
+######################
+*.lnk
