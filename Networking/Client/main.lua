@@ -190,9 +190,9 @@ function love.draw()
     -- pretty simple, we just loop over the world table, and print the
     -- name (key) of everything in their, at its own stored co-ords.
     love.graphics.setColor(255, 0, 0)
-    -- for k, v in pairs(world) do
-    --     love.graphics.rectangle("line", v.x, v.y, 20, 20)
-    -- end
+    for k, v in pairs(world) do
+        love.graphics.rectangle("line", v.x, v.y, 20, 20)
+    end
 
     love.graphics.setColor(255, 255, 255)
 
